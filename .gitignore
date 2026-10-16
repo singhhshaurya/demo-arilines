@@ -12,6 +12,7 @@ __pycache__/
 venv/
 
 # React
+frontend/node_modules
 node_modules/
 dist/
 
