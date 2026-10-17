@@ -56,7 +56,7 @@ export default function MyBookingsPage() {
             <Ticket className="w-10 h-10 text-gray-300 mx-auto" />
             <h3 className="font-bold text-sm text-[#111236]">No Bookings Found</h3>
             <p className="text-xs text-[#68697F] max-w-sm mx-auto">
-              You haven't made any flight bookings yet. Search flights and book with sandbox payment to see them here!
+              You haven't made any flight bookings yet!
             </p>
             <Link
               to="/"

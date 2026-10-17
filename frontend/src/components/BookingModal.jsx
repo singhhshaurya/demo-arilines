@@ -412,17 +412,6 @@ export default function BookingModal({ flight, onClose }) {
                 </span>
               </div>
 
-              {/* Demo test notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
-                <div className="font-semibold flex items-center gap-1.5 mb-1 text-[#FF7110]">
-                  <ShieldCheck className="w-4 h-4" />
-                  Razorpay Sandbox Test Mode
-                </div>
-                <p className="text-[11px] leading-relaxed text-[#68697F]">
-                  Test Card: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">4111 1111 1111 1111</code> | Expiry: Any future date | CVV: 123 | OTP: 1234
-                </p>
-              </div>
-
               <div className="space-y-3">
                 <button
                   data-testid="pay-sandbox-button"
@@ -431,7 +420,7 @@ export default function BookingModal({ flight, onClose }) {
                   className="w-full py-3.5 bg-[#00A698] hover:bg-[#008276] text-white rounded-lg font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-[0.99]"
                 >
                   <CheckCircle2 className="w-5 h-5" />
-                  {isLoading ? 'Processing Sandbox Payment...' : 'Confirm & Pay (Sandbox)'}
+                  {isLoading ? 'Processing Payment...' : 'Confirm & Pay Securely'}
                 </button>
 
                 <button

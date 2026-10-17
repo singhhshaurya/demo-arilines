@@ -107,15 +107,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F1F2F8] flex flex-col justify-between">
       <div>
-        {/* Demo Environment Notice Banner */}
-        <div className="bg-amber-400 text-[#111236] text-xs font-semibold py-2 px-4 shadow-xs">
-          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center">
-            <AlertCircle className="w-4 h-4 shrink-0 text-amber-900" />
-            <span>
-              ⚠️ Demo Environment — All payments are simulated using Razorpay Test Mode. No real money is charged.
-            </span>
-          </div>
-        </div>
 
         {/* Hero Section */}
         <section className="relative bg-gradient-to-r from-[#0770E3] to-[#043A8A] text-white pt-12 pb-24 px-4 sm:px-6 lg:px-8">

@@ -165,8 +165,7 @@ def auth_google():
     ---
     tags:
       - Authentication
-    security:
-      - Bearer: []
+    security: []
     parameters:
       - in: body
         name: body
@@ -704,7 +703,6 @@ def _calculate_refund(booking, flight):
     }
 
 
-@app.route("/api/bookings/<pnr>", methods=["GET"])
 @app.route("/api/bookings/pnr/<pnr>", methods=["GET"])
 def get_booking_by_pnr(pnr):
     """
@@ -712,11 +710,13 @@ def get_booking_by_pnr(pnr):
     ---
     tags:
       - Bookings
+    security: []
     parameters:
       - name: pnr
         in: path
         type: string
         required: true
+        description: 6-character Booking PNR
     responses:
       200:
         description: Booking details and cancellation refund preview
@@ -750,22 +750,39 @@ def get_booking_by_pnr(pnr):
     })
 
 
-@app.route("/api/bookings/<pnr>/cancel", methods=["POST"])
 @app.route("/api/bookings/pnr/<pnr>/cancel", methods=["POST"])
 def cancel_booking(pnr):
     """
-    Cancel Booking & Calculate Refund
+    Cancel Booking & Calculate Refund (Requires User Ownership or Admin)
     ---
     tags:
       - Bookings
+    security:
+      - Bearer: []
     parameters:
       - name: pnr
         in: path
         type: string
         required: true
+        description: 6-character Booking PNR
+      - in: body
+        name: body
+        required: false
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+              description: Passenger email for ownership verification (required for guest bookings without JWT)
     responses:
       200:
         description: Cancellation confirmed with refund receipt
+      401:
+        description: Authentication required to cancel this account booking
+      403:
+        description: Forbidden - Not authorized to cancel this booking
+      404:
+        description: Booking not found
     """
     cleaned_pnr = pnr.strip().upper()
     booking = bookings_col.find_one({"pnr": {"$regex": f"^{cleaned_pnr}$", "$options": "i"}})
@@ -781,6 +798,52 @@ def cancel_booking(pnr):
             "cancellation_fee": booking.get("cancellation", {}).get("cancellation_fee", 0),
             "status": "CANCELLED",
         }), 200
+
+    # Authorization Check: Cancellation must only be possible by the user who owns the booking (or admin)
+    booking_owner_email = (
+        booking.get("user_email")
+        or booking.get("passenger", {}).get("email")
+        or ""
+    ).strip().lower()
+
+    current_user = get_current_user_from_header()
+    data = request.get_json(silent=True) or {}
+    provided_email = (data.get("email") or request.args.get("email") or "").strip().lower()
+
+    is_authorized = False
+
+    # 1. Admin authorization: Admins can cancel any booking for operations/support
+    if current_user and check_admin_access():
+        is_authorized = True
+    # 2. Authenticated user authorization: JWT email must match the booking owner
+    elif current_user and current_user.get("email"):
+        caller_email = current_user.get("email", "").strip().lower()
+        if caller_email == booking_owner_email:
+            is_authorized = True
+        else:
+            masked_owner = f"{booking_owner_email[:2]}***@{booking_owner_email.split('@')[-1]}" if "@" in booking_owner_email else "***"
+            return jsonify({
+                "error": "Forbidden: You are not authorized to cancel this booking. This booking belongs to another user account.",
+                "booking_owner": masked_owner,
+            }), 403
+    # 3. Unauthenticated request: Cannot cancel just by knowing the PNR
+    else:
+        # If the booking was linked to an authenticated account, require signing in
+        if booking.get("booking_type") == "authenticated" and booking.get("user_email"):
+            return jsonify({
+                "error": "Authentication required: This booking is linked to a registered SkyPulse user account. Please sign in to cancel.",
+            }), 401
+
+        # For guest bookings, strictly require matching the passenger email
+        if provided_email and provided_email == booking_owner_email:
+            is_authorized = True
+        else:
+            return jsonify({
+                "error": "Forbidden: Knowing the PNR code alone is not authorized to cancel a flight. Verification requires the matching passenger email address or account login.",
+            }), 403
+
+    if not is_authorized:
+        return jsonify({"error": "Forbidden: Not authorized to cancel this booking."}), 403
 
     # Fetch live flight
     flight = None
@@ -1199,8 +1262,7 @@ def dev_user_lookup():
           properties:
             email:
               type: string
-    security:
-      - Bearer: []
+    security: []
     responses:
       200:
         description: User profile, role, and corresponding JWT token

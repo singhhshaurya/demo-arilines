@@ -198,7 +198,7 @@ export default function ManageBookingPage() {
               <div>
                 <span className="text-[#68697F] block">Refund Target</span>
                 <span className="font-semibold text-[#111236]">Original Payment Source</span>
-                <span className="text-[10px] text-[#68697F] block">Razorpay Test Sandbox</span>
+                <span className="text-[10px] text-[#68697F] block">Razorpay</span>
               </div>
             </div>
 
@@ -320,7 +320,7 @@ export default function ManageBookingPage() {
                   <span className="text-xl font-bold font-mono text-[#111236]">
                     ₹{Number(booking.total_paid || 4999).toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[10px] text-emerald-600 block">Verified via Razorpay Sandbox</span>
+                  <span className="text-[10px] text-emerald-600 block">Verified via Razorpay</span>
                 </div>
               </div>
 

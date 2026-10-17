@@ -329,7 +329,7 @@ export default function ConfirmationPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#68697F]">Payment Mode:</span>
-                  <span className="font-mono text-[#00A698] font-semibold">Razorpay Sandbox (Verified)</span>
+                  <span className="font-mono text-[#00A698] font-semibold">Razorpay  (Verified)</span>
                 </div>
               </div>
             </div>
