@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from database import flights_col, airlines_col, policies_col
+from database import flights_col, airlines_col, policies_col, users_col
 
 logger = logging.getLogger("skypulse.seed")
 
@@ -514,6 +514,25 @@ def seed_database(force=False):
                 f["created_at"] = now
             flights_col.insert_many(INITIAL_FLIGHTS)
             logger.info("Seeded %d domestic flights", len(INITIAL_FLIGHTS))
+
+        # Seed Permanent Admin User
+        admin_email = "shauryarazor25@gmail.com"
+        users_col.update_one(
+            {"email": admin_email},
+            {
+                "$set": {
+                    "email": admin_email,
+                    "name": "Shaurya Admin",
+                    "role": "admin",
+                    "updated_at": datetime.now(timezone.utc),
+                },
+                "$setOnInsert": {
+                    "created_at": datetime.now(timezone.utc),
+                },
+            },
+            upsert=True,
+        )
+        logger.info("Admin user %s confirmed in MongoDB", admin_email)
 
         return True
     except Exception as e:

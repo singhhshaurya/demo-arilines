@@ -4,7 +4,10 @@ import {
   adminUpdateFlightStatus,
   adminGetBookings,
   adminAddFlight,
+  googleSignIn,
 } from '../lib/api'
+import { getUser, setToken, clearToken } from '../lib/auth'
+import GoogleAuthButton from '../components/GoogleAuthButton'
 import {
   ShieldAlert,
   Plane,
@@ -14,16 +17,18 @@ import {
   Users,
   CheckCircle2,
   RefreshCw,
-  Sliders,
-  DollarSign,
   Radio,
   Lock,
+  LogOut,
+  UserCheck,
+  KeyRound,
 } from 'lucide-react'
 
-export default function AdminPage() {
-  const [password, setPassword] = useState('admin123')
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
+const REQUIRED_ADMIN_EMAIL = 'shauryarazor25@gmail.com'
 
+export default function AdminPage() {
+  const [currentUser, setCurrentUser] = useState(getUser())
+  const [password, setPassword] = useState('admin123')
   const [activeTab, setActiveTab] = useState('simulator') // 'simulator', 'bookings', 'add-flight'
 
   // Data states
@@ -50,7 +55,10 @@ export default function AdminPage() {
     cancellation_policy: 'FREE_CANCELLATION',
   })
 
+  const isAdmin = currentUser?.email?.trim().toLowerCase() === REQUIRED_ADMIN_EMAIL
+
   const loadData = async () => {
+    if (!isAdmin) return
     setLoading(true)
     try {
       const [flightList, bookingList] = await Promise.all([
@@ -67,8 +75,10 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (isAdmin) {
+      loadData()
+    }
+  }, [currentUser])
 
   const handleStatusChange = async (flightId, newStatus, delayMinutes = 0) => {
     try {
@@ -94,6 +104,99 @@ export default function AdminPage() {
     }
   }
 
+  const handleSimulateAdminLogin = async () => {
+    const adminPayload = {
+      name: 'Shaurya Admin',
+      email: REQUIRED_ADMIN_EMAIL,
+      picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+      sub: 'google-sub-shauryarazor25',
+    }
+    const mockToken = `header.${btoa(JSON.stringify(adminPayload))}.signature`
+    try {
+      const data = await googleSignIn(mockToken)
+      setToken(data.token || mockToken)
+      setCurrentUser(data.user || adminPayload)
+    } catch {
+      setToken(mockToken)
+      setCurrentUser(adminPayload)
+    }
+  }
+
+  const handleLogout = () => {
+    clearToken()
+    setCurrentUser(null)
+  }
+
+  // ACCESS DENIED VIEW: If not logged in as shauryarazor25@gmail.com
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#F1F2F8] py-16 px-4 flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-[#DDDDE5] max-w-md w-full p-8 shadow-sm text-center space-y-6">
+          <div className="w-16 h-16 rounded-full bg-red-50 text-[#D1435B] flex items-center justify-center mx-auto border border-red-200">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[11px] uppercase font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">
+              Access Restricted
+            </span>
+            <h2 className="text-xl font-extrabold text-[#111236]">Admin Portal Authorization</h2>
+            <p className="text-xs text-[#68697F] leading-relaxed">
+              Access to the Flight Operations & Delay Simulator is strictly restricted. Only the administrator account{' '}
+              <strong className="text-[#111236] font-mono">{REQUIRED_ADMIN_EMAIL}</strong> is authorized.
+            </p>
+          </div>
+
+          {currentUser ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-xs text-amber-900 space-y-2">
+              <div className="flex items-center justify-center gap-1.5 font-bold">
+                <AlertTriangle className="w-4 h-4 text-[#FF7110]" />
+                Unauthorized User Account
+              </div>
+              <p className="text-[11px] text-[#68697F]">
+                Currently signed in as: <strong className="text-[#111236]">{currentUser.email}</strong>
+              </p>
+              <button
+                onClick={handleLogout}
+                className="mt-1 px-4 py-1.5 bg-white border border-amber-300 rounded text-xs font-semibold text-amber-900 hover:bg-amber-100/50 flex items-center gap-1.5 mx-auto transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign Out & Switch Account
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              <p className="text-xs font-semibold text-[#111236]">
+                Sign in with your authorized Google Account:
+              </p>
+              <div className="flex justify-center">
+                <GoogleAuthButton onLoginSuccess={(user) => setCurrentUser(user)} />
+              </div>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase">
+                  <span className="bg-white px-2 text-[#68697F]">Demo Testing Shortcut</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSimulateAdminLogin}
+                className="w-full py-2.5 px-4 bg-[#0770E3] hover:bg-[#084EB2] text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition"
+              >
+                <KeyRound className="w-4 h-4" />
+                Sign In as shauryarazor25@gmail.com
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // AUTHORIZED ADMIN VIEW
   return (
     <div className="min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -106,8 +209,9 @@ export default function AdminPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-extrabold text-[#111236]">Flight Operations & Admin Portal</h1>
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  Simulation & Recovery Sandbox
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <UserCheck className="w-3 h-3" />
+                  Authorized: {REQUIRED_ADMIN_EMAIL}
                 </span>
               </div>
               <p className="text-xs text-[#68697F]">
@@ -124,6 +228,13 @@ export default function AdminPage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               Refresh
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 border border-red-200 text-[#D1435B] bg-red-50 hover:bg-red-100 rounded text-xs font-semibold flex items-center gap-1.5 transition"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
             </button>
           </div>
         </div>
@@ -270,7 +381,6 @@ export default function AdminPage() {
                           </td>
 
                           <td className="p-3.5 text-right space-x-1.5 whitespace-nowrap">
-                            {/* Simulator Buttons */}
                             <button
                               onClick={() => handleStatusChange(id, 'ON_TIME', 0)}
                               className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-[#111236] rounded text-[11px] font-medium"

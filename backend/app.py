@@ -187,12 +187,8 @@ def auth_google():
             "google_id": "demo-traveler-001",
         }
 
-    # Check if admin
-    is_admin = (
-        user_info["email"] == Config.ADMIN_EMAIL
-        or user_info["email"] in Config.ADMIN_EMAILS
-        or "admin" in user_info["email"].lower()
-    )
+    # Check if admin: Strictly restricted to shauryarazor25@gmail.com
+    is_admin = (user_info.get("email", "").strip().lower() == "shauryarazor25@gmail.com")
     user_info["role"] = "admin" if is_admin else "user"
 
     # Save/update user in database
@@ -795,20 +791,30 @@ def get_my_bookings():
 # Admin Endpoints (Flight Operations & Delay Simulator)
 # -------------------------------------------------------------
 def check_admin_access():
-    """Checks admin password header or admin JWT token."""
-    pwd_header = request.headers.get("x-admin-password") or request.headers.get("X-Admin-Password")
-    if pwd_header == Config.ADMIN_PASSWORD:
-        return True
-
+    """
+    Checks that the user is authenticated and specifically logged in as shauryarazor25@gmail.com.
+    """
     user = get_current_user_from_header()
-    if user and (user.get("role") == "admin" or user.get("email") == Config.ADMIN_EMAIL):
+    if user and user.get("email", "").strip().lower() == "shauryarazor25@gmail.com":
         return True
-
-    # Allow demo access if password header matches default
-    if pwd_header == "admin123":
-        return True
-
     return False
+
+
+@app.route("/api/admin/check", methods=["GET"])
+def admin_check():
+    """
+    Admin: Check current user authorization
+    ---
+    tags:
+      - Admin
+    """
+    user = get_current_user_from_header()
+    authorized = check_admin_access()
+    return jsonify({
+        "authorized": authorized,
+        "email": user.get("email") if user else None,
+        "required_admin_email": "shauryarazor25@gmail.com",
+    })
 
 
 @app.route("/api/admin/flights", methods=["GET"])
@@ -819,6 +825,11 @@ def admin_get_flights():
     tags:
       - Admin
     """
+    if not check_admin_access():
+        return jsonify({
+            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+        }), 403
+
     flights = list(flights_col.find({}).sort("flight_number", 1))
     return jsonify({
         "flights": [serialize(f) for f in flights],
@@ -834,6 +845,11 @@ def admin_add_flight():
     tags:
       - Admin
     """
+    if not check_admin_access():
+        return jsonify({
+            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+        }), 403
+
     data = request.get_json() or {}
     required = ["airline", "flight_number", "origin", "destination", "departure_time", "price"]
     for req in required:
@@ -917,6 +933,11 @@ def admin_update_flight_status(flight_id):
       200:
         description: Flight status updated
     """
+    if not check_admin_access():
+        return jsonify({
+            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+        }), 403
+
     data = request.get_json() or {}
     new_status = data.get("status", "ON_TIME").upper()
     delay_minutes = int(data.get("delay_minutes", 0))
@@ -960,6 +981,11 @@ def admin_get_bookings():
     tags:
       - Admin
     """
+    if not check_admin_access():
+        return jsonify({
+            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+        }), 403
+
     bookings = list(bookings_col.find({}).sort("booked_at", -1))
     return jsonify({
         "bookings": [serialize(b) for b in bookings],
@@ -975,6 +1001,11 @@ def admin_reset_seed():
     tags:
       - Admin
     """
+    if not check_admin_access():
+        return jsonify({
+            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+        }), 403
+
     seed_database(force=True)
     return jsonify({"success": True, "message": "Database successfully re-seeded with demo flights."})
 

@@ -42,14 +42,14 @@ class Config:
 
     # Admin Settings
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123").strip('"\' ')
-    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@skypulse.com").strip('"\' ')
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "shauryarazor25@gmail.com").strip('"\' ').lower()
     ADMIN_EMAILS = [
-        e.strip()
-        for e in os.getenv("ADMIN_EMAILS", "").split(",")
+        e.strip().lower()
+        for e in os.getenv("ADMIN_EMAILS", "shauryarazor25@gmail.com").split(",")
         if e.strip()
     ]
-    if ADMIN_EMAIL and ADMIN_EMAIL not in ADMIN_EMAILS:
-        ADMIN_EMAILS.append(ADMIN_EMAIL)
+    if "shauryarazor25@gmail.com" not in ADMIN_EMAILS:
+        ADMIN_EMAILS.append("shauryarazor25@gmail.com")
 
     # JWT Settings
     JWT_SECRET = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET") or "skypulse_super_secret_jwt_key_2026"
