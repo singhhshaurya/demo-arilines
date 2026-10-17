@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   adminGetFlights,
   adminUpdateFlightStatus,
@@ -21,7 +22,7 @@ import {
   Lock,
   LogOut,
   UserCheck,
-  KeyRound,
+  ArrowLeft,
 } from 'lucide-react'
 
 const REQUIRED_ADMIN_EMAIL = 'shauryarazor25@gmail.com'
@@ -55,7 +56,7 @@ export default function AdminPage() {
     cancellation_policy: 'FREE_CANCELLATION',
   })
 
-  const isAdmin = currentUser?.email?.trim().toLowerCase() === REQUIRED_ADMIN_EMAIL
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.email?.trim().toLowerCase() === REQUIRED_ADMIN_EMAIL
 
   const loadData = async () => {
     if (!isAdmin) return
@@ -104,30 +105,12 @@ export default function AdminPage() {
     }
   }
 
-  const handleSimulateAdminLogin = async () => {
-    const adminPayload = {
-      name: 'Shaurya Admin',
-      email: REQUIRED_ADMIN_EMAIL,
-      picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      sub: 'google-sub-shauryarazor25',
-    }
-    const mockToken = `header.${btoa(JSON.stringify(adminPayload))}.signature`
-    try {
-      const data = await googleSignIn(mockToken)
-      setToken(data.token || mockToken)
-      setCurrentUser(data.user || adminPayload)
-    } catch {
-      setToken(mockToken)
-      setCurrentUser(adminPayload)
-    }
-  }
-
   const handleLogout = () => {
     clearToken()
     setCurrentUser(null)
   }
 
-  // ACCESS DENIED VIEW: If not logged in as shauryarazor25@gmail.com
+  // ACCESS DENIED VIEW: If user is not an administrator
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-[#F1F2F8] py-16 px-4 flex items-center justify-center">
@@ -142,53 +125,53 @@ export default function AdminPage() {
             </span>
             <h2 className="text-xl font-extrabold text-[#111236]">Admin Portal Authorization</h2>
             <p className="text-xs text-[#68697F] leading-relaxed">
-              Access to the Flight Operations & Delay Simulator is strictly restricted. Only the administrator account{' '}
-              <strong className="text-[#111236] font-mono">{REQUIRED_ADMIN_EMAIL}</strong> is authorized.
+              Access to Flight Operations & Delay Simulator is strictly restricted. Only authenticated users with an administrator role configured in the database may access this portal.
             </p>
           </div>
 
           {currentUser ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-xs text-amber-900 space-y-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 text-xs text-amber-900 space-y-3">
               <div className="flex items-center justify-center gap-1.5 font-bold">
                 <AlertTriangle className="w-4 h-4 text-[#FF7110]" />
-                Unauthorized User Account
+                Non-Admin Account
               </div>
               <p className="text-[11px] text-[#68697F]">
-                Currently signed in as: <strong className="text-[#111236]">{currentUser.email}</strong>
+                Currently signed in as: <strong className="text-[#111236]">{currentUser.email}</strong> (role: {currentUser.role || 'user'})
               </p>
-              <button
-                onClick={handleLogout}
-                className="mt-1 px-4 py-1.5 bg-white border border-amber-300 rounded text-xs font-semibold text-amber-900 hover:bg-amber-100/50 flex items-center gap-1.5 mx-auto transition"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                Sign Out & Switch Account
-              </button>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <Link
+                  to="/"
+                  className="px-3 py-1.5 bg-white border border-[#DDDDE5] rounded text-xs font-semibold text-[#111236] hover:bg-gray-50 flex items-center gap-1 transition"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Flight Search
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 bg-white border border-amber-300 rounded text-xs font-semibold text-amber-900 hover:bg-amber-100/50 flex items-center gap-1 transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-3 pt-2">
+            <div className="space-y-4 pt-2">
               <p className="text-xs font-semibold text-[#111236]">
-                Sign in with your authorized Google Account:
+                Sign in with your authorized administrator Google Account:
               </p>
               <div className="flex justify-center">
                 <GoogleAuthButton onLoginSuccess={(user) => setCurrentUser(user)} />
               </div>
-
-              <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase">
-                  <span className="bg-white px-2 text-[#68697F]">Demo Testing Shortcut</span>
-                </div>
+              <div className="pt-2">
+                <Link
+                  to="/"
+                  className="text-xs text-[#0770E3] hover:underline inline-flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  Return to Home
+                </Link>
               </div>
-
-              <button
-                onClick={handleSimulateAdminLogin}
-                className="w-full py-2.5 px-4 bg-[#0770E3] hover:bg-[#084EB2] text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition"
-              >
-                <KeyRound className="w-4 h-4" />
-                Sign In as shauryarazor25@gmail.com
-              </button>
             </div>
           )}
         </div>

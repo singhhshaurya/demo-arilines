@@ -2,7 +2,7 @@ import os
 import random
 import string
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
@@ -53,11 +53,22 @@ swagger_template = {
     "swagger": "2.0",
     "info": {
         "title": "SkyPulse Airlines API",
-        "description": "Flight booking, payments, and self-service cancellation simulator for TinyFish crawler & demo testing.",
+        "description": "Flight booking, payments, self-service cancellation, and admin operations API.",
         "version": "1.0.0",
     },
     "basePath": "/api",
     "schemes": ["http", "https"],
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT Authorization header using Bearer scheme. Enter 'Bearer <token>' or '<token>' to authorize all requests.",
+        }
+    },
+    "security": [
+        {"Bearer": []}
+    ],
 }
 swagger = Swagger(app, config=swagger_config, template=swagger_template)
 
@@ -77,17 +88,46 @@ def generate_pnr():
     return f"SP-{chars}"
 
 
-def get_current_user_from_header():
-    """Extracts user information from Bearer JWT in Authorization header if present."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+def create_user_token(name, email, role):
+    """
+    Generates a JWT token with required fields:
+    name, email, role, expiry_time (ISO string), plus standard exp and iat.
+    """
+    duration_hours = getattr(Config, "JWT_EXPIRATION_HOURS", 48)
+    expiry = datetime.now(timezone.utc) + timedelta(hours=duration_hours)
+    expiry_iso = expiry.isoformat()
+    payload = {
+        "name": name or "Traveler",
+        "email": (email or "").strip().lower(),
+        "role": role or "user",
+        "expiry_time": expiry_iso,
+        "exp": int(expiry.timestamp()),
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+    }
+    token = jwt.encode(payload, Config.JWT_SECRET, algorithm="HS256")
+    return token, expiry_iso
+
+
+def verify_existing_token(token):
+    """Verifies if an existing JWT token is valid and unexpired. Returns decoded payload or None."""
+    if not token or not isinstance(token, str):
         return None
-    token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
         return payload
     except Exception:
         return None
+
+
+def get_current_user_from_header():
+    """Extracts and verifies user information from Bearer JWT in Authorization header if present."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return None
+    token = auth_header.strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+    return verify_existing_token(token)
 
 
 # -------------------------------------------------------------
@@ -125,6 +165,8 @@ def auth_google():
     ---
     tags:
       - Authentication
+    security:
+      - Bearer: []
     parameters:
       - in: body
         name: body
@@ -187,16 +229,47 @@ def auth_google():
             "google_id": "demo-traveler-001",
         }
 
-    # Check if admin: Strictly restricted to shauryarazor25@gmail.com
-    is_admin = (user_info.get("email", "").strip().lower() == "shauryarazor25@gmail.com")
-    user_info["role"] = "admin" if is_admin else "user"
+    email = (user_info.get("email") or "").strip().lower()
+    user_info["email"] = email
+
+    # Check database for existing user
+    db_user = users_col.find_one({"email": email})
+
+    # Determine role:
+    # 1. Configured admin email or admin list
+    # 2. Existing role in database (e.g. hardcoded admin)
+    # 3. Default to "user"
+    if email == Config.ADMIN_EMAIL or email in Config.ADMIN_EMAILS:
+        role = "admin"
+    elif db_user and db_user.get("role"):
+        role = db_user.get("role")
+    else:
+        role = "user"
+    user_info["role"] = role
+
+    # Check for existing valid JWT token in database (Session Token Persistence)
+    token = None
+    expiry_iso = None
+    if db_user and db_user.get("jwt_token"):
+        token_payload = verify_existing_token(db_user.get("jwt_token"))
+        if token_payload:
+            # Continue the user session using existing unexpired token
+            token = db_user.get("jwt_token")
+            expiry_iso = token_payload.get("expiry_time") or db_user.get("token_expiry")
+
+    # If not present or expired, create new JWT token with required fields
+    if not token:
+        token, expiry_iso = create_user_token(user_info.get("name"), email, role)
 
     # Save/update user in database
     users_col.update_one(
-        {"email": user_info["email"]},
+        {"email": email},
         {
             "$set": {
                 **user_info,
+                "role": role,
+                "jwt_token": token,
+                "token_expiry": expiry_iso,
                 "last_login": datetime.now(timezone.utc),
             },
             "$setOnInsert": {
@@ -206,19 +279,12 @@ def auth_google():
         upsert=True,
     )
 
-    # Issue JWT token
-    jwt_payload = {
-        "email": user_info["email"],
-        "name": user_info["name"],
-        "picture": user_info["picture"],
-        "role": user_info["role"],
-        "iat": datetime.now(timezone.utc),
-    }
-    app_token = jwt.encode(jwt_payload, Config.JWT_SECRET, algorithm="HS256")
-
     return jsonify({
-        "token": app_token,
-        "user": user_info,
+        "token": token,
+        "user": {
+            **user_info,
+            "expiry_time": expiry_iso,
+        },
     })
 
 
@@ -477,6 +543,8 @@ def create_booking():
     ---
     tags:
       - Bookings
+    security:
+      - Bearer: []
     parameters:
       - in: body
         name: body
@@ -774,6 +842,11 @@ def get_my_bookings():
     ---
     tags:
       - Bookings
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: List of user bookings
     """
     user = get_current_user_from_header()
     query = {}
@@ -792,11 +865,30 @@ def get_my_bookings():
 # -------------------------------------------------------------
 def check_admin_access():
     """
-    Checks that the user is authenticated and specifically logged in as shauryarazor25@gmail.com.
+    Verifies that the current requester has admin role either via JWT payload
+    or by record in the MongoDB users collection.
     """
     user = get_current_user_from_header()
-    if user and user.get("email", "").strip().lower() == "shauryarazor25@gmail.com":
+    if not user:
+        return False
+
+    # 1. Check role in JWT payload
+    if user.get("role") == "admin":
         return True
+
+    email = (user.get("email") or "").strip().lower()
+    if not email:
+        return False
+
+    # 2. Check hardcoded admin email list / configured admin
+    if email == Config.ADMIN_EMAIL or email in Config.ADMIN_EMAILS:
+        return True
+
+    # 3. Check MongoDB users collection for role: "admin"
+    db_user = users_col.find_one({"email": email})
+    if db_user and db_user.get("role") == "admin":
+        return True
+
     return False
 
 
@@ -807,13 +899,19 @@ def admin_check():
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Authorization status
     """
     user = get_current_user_from_header()
     authorized = check_admin_access()
     return jsonify({
         "authorized": authorized,
         "email": user.get("email") if user else None,
-        "required_admin_email": "shauryarazor25@gmail.com",
+        "role": user.get("role") if user else None,
+        "required_admin_email": Config.ADMIN_EMAIL,
     })
 
 
@@ -824,10 +922,17 @@ def admin_get_flights():
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: List of flights
+      403:
+        description: Unauthorized
     """
     if not check_admin_access():
         return jsonify({
-            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+            "error": "Forbidden: Administrator privileges required."
         }), 403
 
     flights = list(flights_col.find({}).sort("flight_number", 1))
@@ -844,10 +949,51 @@ def admin_add_flight():
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - airline
+            - flight_number
+            - origin
+            - destination
+            - departure_time
+            - price
+          properties:
+            airline:
+              type: string
+            airline_code:
+              type: string
+            flight_number:
+              type: string
+            origin:
+              type: string
+            destination:
+              type: string
+            departure_time:
+              type: string
+            arrival_time:
+              type: string
+            price:
+              type: number
+            aircraft:
+              type: string
+            cancellation_policy:
+              type: string
+    responses:
+      201:
+        description: Flight created
+      403:
+        description: Unauthorized
     """
     if not check_admin_access():
         return jsonify({
-            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+            "error": "Forbidden: Administrator privileges required."
         }), 403
 
     data = request.get_json() or {}
@@ -913,6 +1059,8 @@ def admin_update_flight_status(flight_id):
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
     parameters:
       - name: flight_id
         in: path
@@ -932,10 +1080,12 @@ def admin_update_flight_status(flight_id):
     responses:
       200:
         description: Flight status updated
+      403:
+        description: Unauthorized
     """
     if not check_admin_access():
         return jsonify({
-            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+            "error": "Forbidden: Administrator privileges required."
         }), 403
 
     data = request.get_json() or {}
@@ -980,10 +1130,17 @@ def admin_get_bookings():
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: List of bookings
+      403:
+        description: Unauthorized
     """
     if not check_admin_access():
         return jsonify({
-            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+            "error": "Forbidden: Administrator privileges required."
         }), 403
 
     bookings = list(bookings_col.find({}).sort("booked_at", -1))
@@ -1000,14 +1157,113 @@ def admin_reset_seed():
     ---
     tags:
       - Admin
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Database re-seeded
+      403:
+        description: Unauthorized
     """
     if not check_admin_access():
         return jsonify({
-            "error": "Forbidden: Only shauryarazor25@gmail.com has access to the admin portal."
+            "error": "Forbidden: Administrator privileges required."
         }), 403
 
     seed_database(force=True)
     return jsonify({"success": True, "message": "Database successfully re-seeded with demo flights."})
+
+
+# -------------------------------------------------------------
+# Developer Testing Endpoint
+# -------------------------------------------------------------
+@app.route("/api/dev", methods=["GET", "POST"])
+@app.route("/dev", methods=["GET", "POST"])
+def dev_user_lookup():
+    """
+    Developer Testing Endpoint
+    ---
+    tags:
+      - Developer
+    parameters:
+      - name: email
+        in: query
+        type: string
+        required: false
+        description: User email to retrieve JWT token, name, and role for testing
+      - in: body
+        name: body
+        required: false
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: User profile, role, and corresponding JWT token
+      400:
+        description: Missing email parameter
+      404:
+        description: User not found in database
+    """
+    data = request.get_json(silent=True) or {}
+    email = request.args.get("email") or data.get("email") or request.form.get("email")
+
+    if not email or not str(email).strip():
+        return jsonify({
+            "error": "Email parameter is required. Provide ?email=user@example.com or POST body {'email': '...'}"
+        }), 400
+
+    email_clean = str(email).strip().lower()
+    user_doc = users_col.find_one({"email": {"$regex": f"^{email_clean}$", "$options": "i"}})
+    if not user_doc:
+        return jsonify({
+            "error": f"User with email '{email}' not found in database.",
+            "email": email,
+            "found": False,
+        }), 404
+
+    # Determine role: check admin email list or role stored in DB
+    if email_clean == Config.ADMIN_EMAIL or email_clean in Config.ADMIN_EMAILS:
+        role = "admin"
+    else:
+        role = user_doc.get("role", "user")
+
+    name = user_doc.get("name") or "Traveler"
+
+    # Check for existing valid JWT token
+    token = user_doc.get("jwt_token")
+    token_payload = verify_existing_token(token)
+    expiry_iso = user_doc.get("token_expiry")
+
+    # If missing or expired, generate and persist one
+    if not token or not token_payload:
+        token, expiry_iso = create_user_token(name, user_doc.get("email"), role)
+        users_col.update_one(
+            {"_id": user_doc["_id"]},
+            {
+                "$set": {
+                    "role": role,
+                    "jwt_token": token,
+                    "token_expiry": expiry_iso,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            }
+        )
+    else:
+        expiry_iso = token_payload.get("expiry_time") or expiry_iso
+
+    return jsonify({
+        "success": True,
+        "name": name,
+        "email": user_doc.get("email"),
+        "role": role,
+        "jwt_token": token,
+        "expiry_time": expiry_iso,
+    })
 
 
 # -------------------------------------------------------------

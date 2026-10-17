@@ -76,17 +76,19 @@ export default function Navbar() {
             >
               My Bookings
             </Link>
-            <Link
-              to="/admin"
-              className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
-                isActive('/admin')
-                  ? 'text-amber-700 bg-amber-50 font-semibold'
-                  : 'text-[#68697F] hover:text-amber-600 hover:bg-amber-50/50'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Admin Portal
-            </Link>
+            {user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
+                  isActive('/admin')
+                    ? 'text-amber-700 bg-amber-50 font-semibold'
+                    : 'text-[#68697F] hover:text-amber-600 hover:bg-amber-50/50'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Admin Portal
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -120,9 +122,26 @@ export default function Navbar() {
                   onMouseLeave={() => setDropdownOpen(false)}
                 >
                   <div className="px-4 py-2 border-b border-[#DDDDE5]">
-                    <p className="font-semibold text-xs text-[#111236] truncate">{user.name || 'Traveler'}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-xs text-[#111236] truncate">{user.name || 'Traveler'}</p>
+                      {user.role === 'admin' && (
+                        <span className="text-[9px] font-bold uppercase bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
+                          Admin
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-[#68697F] truncate">{user.email}</p>
                   </div>
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs text-amber-700 hover:bg-amber-50 font-semibold"
+                    >
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                      Admin Portal
+                    </Link>
+                  )}
                   <Link
                     to="/my-bookings"
                     onClick={() => setDropdownOpen(false)}
