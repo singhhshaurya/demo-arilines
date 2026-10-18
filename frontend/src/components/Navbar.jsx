@@ -23,6 +23,7 @@ export default function Navbar() {
     setUser(null)
     setDropdownOpen(false)
     navigate('/')
+    window.location.reload()
   }
 
   const isActive = (path) => {
@@ -74,7 +75,7 @@ export default function Navbar() {
                   : 'text-[#68697F] hover:text-[#111236] hover:bg-gray-100'
               }`}
             >
-              Manage Booking
+              Find Booking
             </Link>
             <Link
               to="/my-bookings"

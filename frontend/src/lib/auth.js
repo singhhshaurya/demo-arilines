@@ -15,7 +15,23 @@ export const setToken = (token) => {
 }
 
 export const clearToken = () => {
-  localStorage.removeItem(TOKEN_KEY)
+  try {
+    localStorage.clear()
+  } catch (err) {
+    console.warn('Failed to clear localStorage:', err)
+  }
+  try {
+    sessionStorage.clear()
+  } catch (err) {
+    console.warn('Failed to clear sessionStorage:', err)
+  }
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    try {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name))
+      }).catch(() => {})
+    } catch (e) {}
+  }
 }
 
 export const getUser = () => {

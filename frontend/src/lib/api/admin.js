@@ -153,26 +153,6 @@ export const adminGetBookings = async (password) => {
   } catch (err) {
     console.warn('Backend adminGetBookings failed, returning local bookings:', err)
     const saved = JSON.parse(localStorage.getItem('skypulse_demo_bookings') || '[]')
-    if (saved.length === 0) {
-      return [
-        {
-          pnr: 'SK-7K9A2X',
-          passenger: { name: 'Aditya Sharma', email: 'aditya@example.com' },
-          flight: { flight_number: 'AI-805', origin: 'DEL', destination: 'BOM' },
-          fare: { total: 4999 },
-          status: 'CONFIRMED',
-          created_at: new Date().toISOString(),
-        },
-        {
-          pnr: 'SK-2B4L9P',
-          passenger: { name: 'Priya Patel', email: 'priya@example.com' },
-          flight: { flight_number: '6E-2041', origin: 'BOM', destination: 'GOI' },
-          fare: { total: 3200 },
-          status: 'CANCELLED',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ]
-    }
     return saved
   }
 }

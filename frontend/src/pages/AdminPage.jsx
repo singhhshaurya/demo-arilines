@@ -62,32 +62,32 @@ export default function AdminPage() {
   const generateNewFlightId = () => `SP-${Math.floor(100 + Math.random() * 900)}`
 
   const [createForm, setCreateForm] = useState({
-    airline: 'SkyPulse Air',
-    airline_code: 'SP',
-    flight_number: generateNewFlightId(),
-    origin: 'DEL',
-    origin_city: 'New Delhi',
-    origin_terminal: 'T3',
-    destination: 'BOM',
-    destination_city: 'Mumbai',
-    destination_terminal: 'T2',
-    departure_time: '10:00',
-    arrival_time: '12:15',
-    duration: '2h 15m',
-    date: new Date().toISOString().split('T')[0],
-    price: 4999,
-    aircraft: 'Airbus A320neo',
-    total_seats: 180,
-    seats_available: 180,
+    airline: '',
+    airline_code: '',
+    flight_number: '',
+    origin: '',
+    origin_city: '',
+    origin_terminal: '',
+    destination: '',
+    destination_city: '',
+    destination_terminal: '',
+    departure_time: '',
+    arrival_time: '',
+    duration: '',
+    date: '',
+    price: '',
+    aircraft: '',
+    total_seats: '',
+    seats_available: '',
     cancellation_policy: 'FREE_CANCELLATION',
   })
 
   // Delay form state
   const [delayInput, setDelayInput] = useState({
-    delayMinutes: 45,
-    departureDelay: 45,
-    arrivalDelay: 45,
-    reason: 'Air Traffic Control Hold',
+    delayMinutes: '',
+    departureDelay: '',
+    arrivalDelay: '',
+    reason: '',
   })
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.email?.trim().toLowerCase() === REQUIRED_ADMIN_EMAIL
@@ -236,6 +236,7 @@ export default function AdminPage() {
   const handleLogout = () => {
     clearToken()
     setCurrentUser(null)
+    window.location.reload()
   }
 
   // ACCESS DENIED VIEW
@@ -575,7 +576,7 @@ export default function AdminPage() {
               </h4>
               <p className="text-[#68697F] leading-relaxed">
                 Use 1-click buttons below or click <strong>"Custom Delay"</strong> to set arrival and departure delays.
-                Passengers visiting the public <strong>View Flight Status</strong> page or <strong>Manage Booking</strong> page will immediately see the delay in real time!
+                Passengers visiting the public <strong>View Flight Status</strong> page or <strong>Find Booking</strong> page will immediately see the delay in real time!
               </p>
             </div>
 

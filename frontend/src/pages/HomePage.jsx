@@ -53,9 +53,9 @@ const POPULAR_ROUTES = [
 export default function HomePage() {
   const navigate = useNavigate()
 
-  const [origin, setOrigin] = useState('DEL')
-  const [destination, setDestination] = useState('BOM')
-  const [date, setDate] = useState('2026-11-15')
+  const [origin, setOrigin] = useState('')
+  const [destination, setDestination] = useState('')
+  const [date, setDate] = useState('')
   const [passengers, setPassengers] = useState(1)
   const [classType, setClassType] = useState('economy')
 
@@ -87,6 +87,10 @@ export default function HomePage() {
 
   const handleSearch = (e) => {
     e.preventDefault()
+    if (!origin || !destination) {
+      alert('Please select departure and arrival airports.')
+      return
+    }
     navigate(
       `/search?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(
         destination
@@ -159,10 +163,10 @@ export default function HomePage() {
                       className="border border-[#DDDDE5] rounded p-2.5 bg-gray-50/50 hover:bg-white cursor-pointer transition focus-within:ring-2 focus-within:ring-[#0770E3]"
                     >
                       <div className="text-lg font-bold text-[#111236] leading-none">
-                        {origin}
+                        {origin || <span className="text-gray-400 font-medium text-base">Select</span>}
                       </div>
                       <div className="text-xs text-[#68697F] truncate">
-                        {POPULAR_AIRPORTS.find((a) => a.code === origin)?.city || 'Select Origin'}
+                        {POPULAR_AIRPORTS.find((a) => a.code === origin)?.city || 'Departure City'}
                       </div>
                     </div>
 
@@ -220,10 +224,10 @@ export default function HomePage() {
                       className="border border-[#DDDDE5] rounded p-2.5 bg-gray-50/50 hover:bg-white cursor-pointer transition focus-within:ring-2 focus-within:ring-[#0770E3]"
                     >
                       <div className="text-lg font-bold text-[#111236] leading-none">
-                        {destination}
+                        {destination || <span className="text-gray-400 font-medium text-base">Select</span>}
                       </div>
                       <div className="text-xs text-[#68697F] truncate">
-                        {POPULAR_AIRPORTS.find((a) => a.code === destination)?.city || 'Select Destination'}
+                        {POPULAR_AIRPORTS.find((a) => a.code === destination)?.city || 'Arrival City'}
                       </div>
                     </div>
 

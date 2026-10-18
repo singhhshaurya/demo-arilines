@@ -99,10 +99,6 @@ export default function BookingModal({ flight, onClose }) {
       const res = await createBooking(payload)
       const pnr = res.pnr || res.booking?.pnr
 
-      // Store contact email for confirmation lookup
-      localStorage.setItem('skypulse_last_booking_email', passenger.email)
-      localStorage.setItem('skypulse_last_pnr', pnr)
-
       onClose()
       navigate(`/confirmation/${pnr}`, { state: { booking: res.booking || payload, pnr } })
     } catch (err) {
@@ -283,7 +279,7 @@ export default function BookingModal({ flight, onClose }) {
                     type="text"
                     value={passenger.name}
                     onChange={(e) => setPassenger({ ...passenger, name: e.target.value })}
-                    placeholder="e.g. Aditya Sharma"
+                    placeholder="e.g. John Doe"
                     className="w-full px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-[#0770E3]"
                   />
                   {errors.name && (
@@ -299,7 +295,7 @@ export default function BookingModal({ flight, onClose }) {
                     type="email"
                     value={passenger.email}
                     onChange={(e) => setPassenger({ ...passenger, email: e.target.value })}
-                    placeholder="aditya@example.com"
+                    placeholder="e.g. passenger@example.com"
                     className="w-full px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-[#0770E3]"
                   />
                   {errors.email && (
@@ -315,7 +311,7 @@ export default function BookingModal({ flight, onClose }) {
                     type="tel"
                     value={passenger.phone}
                     onChange={(e) => setPassenger({ ...passenger, phone: e.target.value })}
-                    placeholder="+91 9876543210"
+                    placeholder="e.g. +91 9876543210"
                     className="w-full px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-[#0770E3]"
                   />
                   {errors.phone && (
@@ -332,7 +328,7 @@ export default function BookingModal({ flight, onClose }) {
                       type="number"
                       value={passenger.age}
                       onChange={(e) => setPassenger({ ...passenger, age: e.target.value })}
-                      placeholder="28"
+                      placeholder="e.g. 28"
                       className="w-full px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-[#0770E3]"
                     />
                     {errors.age && (

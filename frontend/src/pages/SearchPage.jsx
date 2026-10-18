@@ -7,9 +7,9 @@ import { Filter, ArrowUpDown, Shield, SlidersHorizontal, ArrowLeft, RefreshCw, A
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams()
-  const origin = searchParams.get('origin') || 'DEL'
-  const destination = searchParams.get('destination') || 'BOM'
-  const date = searchParams.get('date') || '2026-11-15'
+  const origin = searchParams.get('origin') || ''
+  const destination = searchParams.get('destination') || ''
+  const date = searchParams.get('date') || ''
   const passengers = parseInt(searchParams.get('passengers') || '1', 10)
   const classType = searchParams.get('class') || 'economy'
 
@@ -106,12 +106,12 @@ export default function SearchPage() {
             </Link>
             <div>
               <div className="flex items-center gap-2 font-bold text-lg text-[#111236]">
-                <span>{origin}</span>
+                <span>{origin || 'All Origins'}</span>
                 <span className="text-[#68697F] font-normal">→</span>
-                <span>{destination}</span>
+                <span>{destination || 'All Destinations'}</span>
               </div>
               <p className="text-xs text-[#68697F]">
-                {date} • {passengers} Passenger{passengers > 1 ? 's' : ''} •{' '}
+                {date ? `${date} • ` : ''}{passengers} Passenger{passengers > 1 ? 's' : ''} •{' '}
                 <span className="capitalize">{classType}</span>
               </p>
             </div>

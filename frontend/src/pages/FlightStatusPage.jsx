@@ -17,9 +17,9 @@ import {
 
 export default function FlightStatusPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialFlightId = searchParams.get('flight_id') || searchParams.get('id') || 'SP-804'
-  const initialDate = searchParams.get('date') || new Date().toISOString().split('T')[0]
-  const initialOrigin = searchParams.get('origin') || 'DEL'
+  const initialFlightId = searchParams.get('flight_id') || searchParams.get('id') || ''
+  const initialDate = searchParams.get('date') || ''
+  const initialOrigin = searchParams.get('origin') || ''
 
   const [flightId, setFlightId] = useState(initialFlightId)
   const [date, setDate] = useState(initialDate)
@@ -29,9 +29,9 @@ export default function FlightStatusPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Auto-search on mount
+  // Search on mount ONLY if flight_id was explicitly provided in URL query parameters
   useEffect(() => {
-    if (initialFlightId) {
+    if (initialFlightId.trim()) {
       handleSearch(initialFlightId, initialDate, initialOrigin)
     }
   }, [])
@@ -350,9 +350,9 @@ export default function FlightStatusPage() {
               <div className="text-xs text-[#68697F]">
                 Have a booking reference? Check refund or change your ticket in{' '}
                 <Link to="/manage-booking" className="text-[#0770E3] font-bold hover:underline">
-                  Manage Booking
+                  Find Bookings
                 </Link>
-                .
+                
               </div>
 
               <div className="flex items-center gap-3">

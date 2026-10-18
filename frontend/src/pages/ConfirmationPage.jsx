@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom'
 import { getBookingByPNR, cancelBooking } from '../lib/api'
+import { getUser } from '../lib/auth'
 import {
   CheckCircle2,
   Plane,
@@ -36,8 +37,8 @@ export default function ConfirmationPage() {
       if (!pnr) return
       setLoading(true)
       try {
-        const storedEmail = localStorage.getItem('skypulse_last_booking_email') || ''
-        const data = await getBookingByPNR(pnr, storedEmail)
+        const userEmail = getUser()?.email || ''
+        const data = await getBookingByPNR(pnr, userEmail)
         if (isMounted) {
           setBooking(data.booking || data)
         }
@@ -74,7 +75,7 @@ export default function ConfirmationPage() {
         },
       }))
     } catch (err) {
-      alert('Cancellation failed. Please try from Manage Booking page.')
+      alert('Cancellation failed. Please try from Find Bookings page.')
     } finally {
       setIsCancelling(false)
     }

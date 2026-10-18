@@ -19,8 +19,8 @@ import {
 
 export default function ManageBookingPage() {
   const [searchParams] = useSearchParams()
-  const initialPnr = searchParams.get('pnr') || localStorage.getItem('skypulse_last_pnr') || ''
-  const initialEmail = searchParams.get('email') || localStorage.getItem('skypulse_last_booking_email') || ''
+  const initialPnr = searchParams.get('pnr') || ''
+  const initialEmail = searchParams.get('email') || ''
 
   const [pnr, setPnr] = useState(initialPnr)
   const [email, setEmail] = useState(initialEmail)
@@ -34,9 +34,9 @@ export default function ManageBookingPage() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancellationReceipt, setCancellationReceipt] = useState(null)
 
-  // Auto-search if PNR is in URL query
+  // Auto-search ONLY if PNR is explicitly provided in URL query
   useEffect(() => {
-    if (initialPnr) {
+    if (initialPnr.trim()) {
       handleLookup(initialPnr, initialEmail)
     }
   }, [])
@@ -126,7 +126,7 @@ export default function ManageBookingPage() {
             Self-Service Passenger Portal
           </span>
           <h1 className="text-3xl font-extrabold text-[#111236] tracking-tight">
-            Manage Booking & Flight Cancellation
+            Find Bookings & Flight Cancellation
           </h1>
           <p className="text-xs text-[#68697F]">
             Retrieve any booking by PNR to check real-time flight status, review cancellation policies, and calculate

@@ -37,31 +37,7 @@ export const getBookingByPNR = async (pnr, email) => {
     )
     if (found) return { booking: found }
 
-    return {
-      booking: {
-        pnr,
-        status: 'CONFIRMED',
-        flight: MOCK_FLIGHTS[0],
-        flight_id: 'fl-101',
-        passenger: {
-          name: 'Demo Passenger',
-          email: email || 'passenger@example.com',
-          phone: '+91 98765 43210',
-          age: 28,
-          gender: 'Male',
-        },
-        class: 'Economy',
-        fare: {
-          base_fare: 4999,
-          taxes: 900,
-          convenience_fee: 299,
-          total: 6198,
-        },
-        cancellation_policy: 'FREE_CANCELLATION',
-        cancellation_policy_text: 'Free cancellation up to 24h before departure',
-        created_at: new Date().toISOString(),
-      },
-    }
+    throw err
   }
 }
 
