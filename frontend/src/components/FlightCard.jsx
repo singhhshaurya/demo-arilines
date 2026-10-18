@@ -1,7 +1,9 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plane, AlertTriangle, ShieldCheck, Clock } from 'lucide-react'
 
 export default function FlightCard({ flight, onBook }) {
+  const navigate = useNavigate()
   if (!flight) return null
 
   // Safely extract origin and destination whether string or object
@@ -169,7 +171,13 @@ export default function FlightCard({ flight, onBook }) {
 
           <button
             data-testid="book-button"
-            onClick={() => onBook(flight)}
+            onClick={() => {
+              if (onBook) {
+                onBook(flight)
+              } else {
+                navigate(`/book/${flight._id || flight.id || flight.flight_number}`, { state: { flight } })
+              }
+            }}
             disabled={isCancelled}
             className={`mt-2 px-5 py-2 rounded-md font-semibold text-sm transition shadow-sm ${
               isCancelled

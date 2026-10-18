@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { searchFlights } from '../lib/api'
 import FlightCard from '../components/FlightCard'
-import BookingModal from '../components/BookingModal'
 import { Filter, ArrowUpDown, Shield, SlidersHorizontal, ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react'
 
 export default function SearchPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const origin = searchParams.get('origin') || ''
   const destination = searchParams.get('destination') || ''
@@ -15,7 +15,6 @@ export default function SearchPage() {
 
   const [flights, setFlights] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedFlight, setSelectedFlight] = useState(null)
 
   // Filters
   const [filterStops, setFilterStops] = useState('all') // 'all', 'direct', '1stop'
@@ -314,7 +313,11 @@ export default function SearchPage() {
                   <FlightCard
                     key={flight._id || flight.id || flight.flight_number}
                     flight={flight}
-                    onBook={(selected) => setSelectedFlight(selected)}
+                    onBook={(selected) => {
+                      navigate(`/book/${selected._id || selected.id || selected.flight_number}`, {
+                        state: { flight: selected, class: classType },
+                      })
+                    }}
                   />
                 ))}
               </div>
@@ -322,14 +325,6 @@ export default function SearchPage() {
           </main>
         </div>
       </div>
-
-      {/* Booking Modal */}
-      {selectedFlight && (
-        <BookingModal
-          flight={selectedFlight}
-          onClose={() => setSelectedFlight(null)}
-        />
-      )}
     </div>
   )
 }

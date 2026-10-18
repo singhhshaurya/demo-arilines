@@ -15,7 +15,9 @@ import {
   FileText,
   Printer,
   ChevronRight,
+  X,
 } from 'lucide-react'
+import FlightInvoiceReceipt from '../components/FlightInvoiceReceipt'
 
 export default function ConfirmationPage() {
   const { pnr } = useParams()
@@ -28,6 +30,7 @@ export default function ConfirmationPage() {
 
   // Cancellation modal inside confirmation
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancelResult, setCancelResult] = useState(null)
 
@@ -125,8 +128,15 @@ export default function ConfirmationPage() {
   const isAirlineCancelled = booking.live_flight?.status === 'CANCELLED_BY_AIRLINE'
 
   return (
-    <div className="min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <>
+      {/* Official Tax Invoice & Flight Receipt (rendered ONLY in Print / Save PDF) */}
+      <div className="hidden print:block w-full">
+        <FlightInvoiceReceipt booking={booking} />
+      </div>
+
+      {/* Screen Interactive Page (completely hidden during print) */}
+      <div className="print:hidden min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto space-y-6">
         {/* Success / Status Header */}
         <div
           className={`rounded-lg border p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm ${
@@ -390,11 +400,19 @@ export default function ConfirmationPage() {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
-              onClick={() => window.print()}
+              onClick={() => setShowInvoiceModal(true)}
               className="flex-1 sm:flex-initial px-4 py-2.5 bg-white border border-[#DDDDE5] rounded-md text-xs font-semibold text-[#111236] hover:bg-gray-50 flex items-center justify-center gap-2 shadow-xs transition"
             >
-              <Printer className="w-4 h-4 text-[#68697F]" />
-              Print Ticket
+              <FileText className="w-4 h-4 text-[#0770E3]" />
+              View Tax Invoice
+            </button>
+
+            <button
+              onClick={() => window.print()}
+              className="flex-1 sm:flex-initial px-4 py-2.5 bg-[#0770E3] hover:bg-[#084EB2] text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition"
+            >
+              <Printer className="w-4 h-4 text-white" />
+              Print / Save PDF
             </button>
 
             {!isCancelled && (
@@ -413,7 +431,7 @@ export default function ConfirmationPage() {
 
       {/* Cancellation Confirmation Modal */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="print:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-[#DDDDE5] space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-red-600">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -481,6 +499,36 @@ export default function ConfirmationPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* On-screen Tax Invoice Preview Modal */}
+      {showInvoiceModal && (
+        <div className="print:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl border border-[#DDDDE5] space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DDDDE5]">
+              <h3 className="font-bold text-sm text-[#111236]">Tax Invoice & Flight Reservation Receipt</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 bg-[#0770E3] hover:bg-[#084EB2] text-white text-xs font-bold rounded flex items-center gap-1.5 transition"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Print / Save PDF
+                </button>
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[75vh] overflow-y-auto pr-1">
+              <FlightInvoiceReceipt booking={booking} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

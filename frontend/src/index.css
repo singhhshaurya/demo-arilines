@@ -33,3 +33,22 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #A0A1B0;
 }
+
+/* Print Styles for PDF / Invoice */
+@media print {
+  header, nav, footer, .no-print, [role="dialog"] {
+    display: none !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #111236 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 10mm 15mm;
+  }
+}

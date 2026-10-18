@@ -8,6 +8,7 @@ import ManageBookingPage from './pages/ManageBookingPage'
 import MyBookingsPage from './pages/MyBookingsPage'
 import FlightStatusPage from './pages/FlightStatusPage'
 import AdminPage from './pages/AdminPage'
+import BookingPage from './pages/BookingPage'
 import { Plane, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react'
 
 class ErrorBoundary extends Component {
@@ -67,12 +68,15 @@ export default function App() {
             <Route path="/my-bookings" element={<MyBookingsPage />} />
             <Route path="/flight-status" element={<FlightStatusPage />} />
             <Route path="/view-flight" element={<FlightStatusPage />} />
+            <Route path="/book/:flightId" element={<BookingPage />} />
+            <Route path="/booking" element={<BookingPage />} />
+            <Route path="/book" element={<BookingPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </ErrorBoundary>
       </main>
 
-      <footer className="bg-[#05203C] text-gray-300 py-8 px-4 text-xs mt-12 border-t border-gray-800">
+      <footer className="bg-[#05203C] text-gray-300 py-8 px-4 text-xs mt-12 border-t border-gray-800 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-[#0770E3] flex items-center justify-center text-white font-bold text-xs">

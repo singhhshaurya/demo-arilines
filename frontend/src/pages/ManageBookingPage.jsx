@@ -15,7 +15,10 @@ import {
   RefreshCw,
   FileText,
   Lock,
+  Printer,
+  X,
 } from 'lucide-react'
+import FlightInvoiceReceipt from '../components/FlightInvoiceReceipt'
 
 export default function ManageBookingPage() {
   const [searchParams] = useSearchParams()
@@ -29,8 +32,9 @@ export default function ManageBookingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Cancellation State
+  // Cancellation & Invoice Modal State
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancellationReceipt, setCancellationReceipt] = useState(null)
 
@@ -118,8 +122,17 @@ export default function ManageBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <>
+      {/* Official Tax Invoice & Flight Receipt (rendered ONLY in Print / Save PDF) */}
+      {booking && (
+        <div className="hidden print:block w-full">
+          <FlightInvoiceReceipt booking={booking} />
+        </div>
+      )}
+
+      {/* Screen Interactive Page (completely hidden during print) */}
+      <div className="print:hidden min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-6">
         {/* Page Title & Context */}
         <div className="text-center max-w-xl mx-auto space-y-2">
           <span className="text-xs uppercase tracking-wider font-bold text-[#0770E3] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
@@ -400,21 +413,43 @@ export default function ManageBookingPage() {
                   </div>
                 </div>
 
-                {/* Action button if not yet cancelled (Strict Requirement 3) */}
-                {!isCancelled ? (
-                  canCancel ? (
-                    <div className="pt-2 flex justify-end">
-                      <button
-                        data-testid="cancel-booking-button"
-                        onClick={() => setShowCancelConfirm(true)}
-                        className="px-6 py-2.5 bg-[#D1435B] hover:bg-red-700 text-white font-bold text-xs rounded-md shadow-sm transition active:scale-[0.98] flex items-center gap-2"
-                      >
-                        <ShieldAlert className="w-4 h-4" />
-                        Proceed with Cancellation
-                      </button>
-                    </div>
-                  ) : !loggedIn ? (
-                    <div className="pt-2 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-4">
+                {/* Print & Tax Invoice Actions */}
+                <div className="pt-3 border-t border-[#DDDDE5] flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowInvoiceModal(true)}
+                      className="px-4 py-2 bg-white border border-[#DDDDE5] rounded-md text-xs font-bold text-[#111236] hover:bg-gray-50 flex items-center gap-1.5 shadow-xs transition"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#0770E3]" />
+                      View Tax Invoice
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="px-4 py-2 bg-[#0770E3] hover:bg-[#084EB2] text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-white" />
+                      Print / Save PDF
+                    </button>
+                  </div>
+
+                  {!isCancelled && canCancel && (
+                    <button
+                      data-testid="cancel-booking-button"
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="px-5 py-2 bg-[#D1435B] hover:bg-red-700 text-white font-bold text-xs rounded-md shadow-sm transition active:scale-[0.98] flex items-center gap-2"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      Proceed with Cancellation
+                    </button>
+                  )}
+                </div>
+
+                {/* Warning banners if user cannot cancel */}
+                {!isCancelled && !canCancel && (
+                  !loggedIn ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <Lock className="w-5 h-5 text-amber-600 shrink-0" />
                         <div>
@@ -432,7 +467,7 @@ export default function ManageBookingPage() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="pt-2 p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
                       <ShieldAlert className="w-5 h-5 text-gray-500 shrink-0" />
                       <div>
                         <h4 className="text-xs font-bold text-gray-800">Cancellation Unavailable</h4>
@@ -442,7 +477,9 @@ export default function ManageBookingPage() {
                       </div>
                     </div>
                   )
-                ) : (
+                )}
+
+                {isCancelled && (
                   <div className="text-center p-3 bg-red-50 text-red-700 font-semibold text-xs rounded border border-red-200">
                     This ticket has been cancelled. Refund status: PROCESSED.
                   </div>
@@ -454,7 +491,7 @@ export default function ManageBookingPage() {
 
         {/* Cancellation Confirmation Modal */}
         {showCancelConfirm && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="print:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-[#DDDDE5] space-y-4">
               <div className="flex items-center gap-3 text-red-600">
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
@@ -503,7 +540,37 @@ export default function ManageBookingPage() {
             </div>
           </div>
         )}
+
+        {/* On-screen Tax Invoice Preview Modal */}
+        {showInvoiceModal && (
+          <div className="print:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl border border-[#DDDDE5] space-y-4 my-8">
+              <div className="flex items-center justify-between pb-3 border-b border-[#DDDDE5]">
+                <h3 className="font-bold text-sm text-[#111236]">Tax Invoice & Flight Reservation Receipt</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="px-3.5 py-1.5 bg-[#0770E3] hover:bg-[#084EB2] text-white text-xs font-bold rounded flex items-center gap-1.5 transition"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    Print / Save PDF
+                  </button>
+                  <button
+                    onClick={() => setShowInvoiceModal(false)}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-[75vh] overflow-y-auto pr-1">
+                <FlightInvoiceReceipt booking={booking} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  )
+  </>
+)
 }
