@@ -6,6 +6,7 @@ import SearchPage from './pages/SearchPage'
 import ConfirmationPage from './pages/ConfirmationPage'
 import ManageBookingPage from './pages/ManageBookingPage'
 import MyBookingsPage from './pages/MyBookingsPage'
+import FlightStatusPage from './pages/FlightStatusPage'
 import AdminPage from './pages/AdminPage'
 import { Plane, ExternalLink, ShieldCheck, AlertCircle } from 'lucide-react'
 
@@ -62,7 +63,10 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/confirmation/:pnr" element={<ConfirmationPage />} />
             <Route path="/manage" element={<ManageBookingPage />} />
+            <Route path="/manage-booking" element={<ManageBookingPage />} />
             <Route path="/my-bookings" element={<MyBookingsPage />} />
+            <Route path="/flight-status" element={<FlightStatusPage />} />
+            <Route path="/view-flight" element={<FlightStatusPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </ErrorBoundary>

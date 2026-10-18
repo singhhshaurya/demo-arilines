@@ -57,6 +57,16 @@ export default function Navbar() {
               Flights
             </Link>
             <Link
+              to="/flight-status"
+              className={`px-3 py-1.5 rounded-md transition ${
+                isActive('/flight-status')
+                  ? 'text-[#0770E3] bg-blue-50 font-semibold'
+                  : 'text-[#68697F] hover:text-[#111236] hover:bg-gray-100'
+              }`}
+            >
+              Flight Status
+            </Link>
+            <Link
               to="/manage"
               className={`px-3 py-1.5 rounded-md transition ${
                 isActive('/manage')

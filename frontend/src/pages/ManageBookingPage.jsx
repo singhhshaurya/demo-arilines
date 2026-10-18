@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { getBookingByPNR, cancelBooking } from '../lib/api'
+import { getUser, isAuthenticated, isAdmin } from '../lib/auth'
 import {
   Search,
   ShieldCheck,
@@ -13,6 +14,7 @@ import {
   ArrowRight,
   RefreshCw,
   FileText,
+  Lock,
 } from 'lucide-react'
 
 export default function ManageBookingPage() {
@@ -92,6 +94,28 @@ export default function ManageBookingPage() {
   const liveFlight = booking?.live_flight || booking?.flight
   const isDelayed = liveFlight?.status === 'DELAYED'
   const isAirlineCancelled = liveFlight?.status === 'CANCELLED_BY_AIRLINE'
+
+  // User Ownership & Authorization Check (Strict Requirement 3)
+  const currentUser = getUser()
+  const loggedIn = isAuthenticated() && Boolean(currentUser)
+
+  const bookingOwnerEmail = (
+    booking?.user_email ||
+    booking?.passenger?.email ||
+    ''
+  ).trim().toLowerCase()
+
+  const currentUserEmail = (currentUser?.email || '').trim().toLowerCase()
+  const isOwner = Boolean(loggedIn && currentUserEmail && currentUserEmail === bookingOwnerEmail)
+  const isUserAdmin = Boolean(loggedIn && (currentUser?.role === 'admin' || isAdmin()))
+  const canCancel = isOwner || isUserAdmin
+
+  const maskEmail = (str) => {
+    if (!str || !str.includes('@')) return 'ticket passenger'
+    const [name, domain] = str.split('@')
+    if (name.length <= 2) return `${name}***@${domain}`
+    return `${name.slice(0, 2)}***@${domain}`
+  }
 
   return (
     <div className="min-h-screen bg-[#F1F2F8] py-8 px-4 sm:px-6 lg:px-8">
@@ -376,18 +400,48 @@ export default function ManageBookingPage() {
                   </div>
                 </div>
 
-                {/* Action button if not yet cancelled */}
+                {/* Action button if not yet cancelled (Strict Requirement 3) */}
                 {!isCancelled ? (
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      data-testid="cancel-booking-button"
-                      onClick={() => setShowCancelConfirm(true)}
-                      className="px-6 py-2.5 bg-[#D1435B] hover:bg-red-700 text-white font-bold text-xs rounded-md shadow-sm transition active:scale-[0.98] flex items-center gap-2"
-                    >
-                      <ShieldAlert className="w-4 h-4" />
-                      Proceed with Cancellation
-                    </button>
-                  </div>
+                  canCancel ? (
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        data-testid="cancel-booking-button"
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="px-6 py-2.5 bg-[#D1435B] hover:bg-red-700 text-white font-bold text-xs rounded-md shadow-sm transition active:scale-[0.98] flex items-center gap-2"
+                      >
+                        <ShieldAlert className="w-4 h-4" />
+                        Proceed with Cancellation
+                      </button>
+                    </div>
+                  ) : !loggedIn ? (
+                    <div className="pt-2 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+                        <div>
+                          <h4 className="text-xs font-bold text-amber-900">Cancellation Restricted</h4>
+                          <p className="text-xs text-amber-800">
+                            You must be signed in as the passenger ({maskEmail(bookingOwnerEmail)}) to cancel this flight.
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        to="/"
+                        className="px-3.5 py-1.5 bg-[#0770E3] hover:bg-[#084EB2] text-white text-xs font-bold rounded shadow-xs shrink-0"
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="pt-2 p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                      <ShieldAlert className="w-5 h-5 text-gray-500 shrink-0" />
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-800">Cancellation Unavailable</h4>
+                        <p className="text-xs text-gray-600">
+                          Signed in as <strong>{currentUserEmail}</strong>. Only the verified booking owner ({maskEmail(bookingOwnerEmail)}) has permission to cancel this ticket.
+                        </p>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <div className="text-center p-3 bg-red-50 text-red-700 font-semibold text-xs rounded border border-red-200">
                     This ticket has been cancelled. Refund status: PROCESSED.
