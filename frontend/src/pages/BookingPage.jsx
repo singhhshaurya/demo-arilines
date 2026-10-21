@@ -574,33 +574,6 @@ export default function BookingPage() {
         notes: specialRequests || undefined,
         hold: seatHoldRequested,
       }
-        flight: flight,
-        passenger: {
-          name: passenger.name,
-          email: passenger.email,
-          phone: passenger.phone,
-          age: Number(passenger.age) || 28,
-          gender: passenger.gender,
-        },
-        class: cabinClass,
-        fare: {
-          base_fare: rawBaseFare,
-          taxes,
-          convenience_fee: convenienceFee,
-          total: totalAmount,
-        },
-        payment: {
-          order_id: orderData?.order_id || `order_${Date.now()}`,
-          payment_id: paymentDetails.razorpay_payment_id || `pay_${Date.now()}`,
-          status: 'SUCCESS',
-          amount: totalAmount,
-        },
-        cancellation_policy: flight.cancellation_policy || 'FREE_CANCELLATION',
-        cancellation_policy_text:
-          flight.cancellation_policy_text || 'Free cancellation up to 24h before departure',
-        special_requests: specialRequests || undefined,
-        notes: specialRequests || undefined,
-      }
 
       const res = await createBooking(payload)
       const pnr = res.pnr || res.booking?.pnr
