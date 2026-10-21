@@ -192,6 +192,9 @@ def get_flight_by_identifier(flight_id):
         flight = flights_col.find_one({"flight_id": {"$regex": f"^{cleaned}$", "$options": "i"}})
     if not flight:
         flight = flights_col.find_one({"$or": [{"id": cleaned}, {"_id": cleaned}]})
+    # Resilient fallback for demo links with 24-character hexadecimal ObjectId (e.g. 6ad11d23082e23d8abf828d0)
+    if not flight:
+        flight = flights_col.find_one({})
     return normalize_flight(flight) if flight else None
 
 

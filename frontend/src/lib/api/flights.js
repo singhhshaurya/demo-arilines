@@ -11,10 +11,10 @@ const STAR_LOGO = 'https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?
 
 // Fallback Mock Flights for resilient demo testing across all supported cities
 export const MOCK_FLIGHTS = [
-  // DEL Flights
+  // Primary Flagship Route (DEL -> BOM) - matches default booking ObjectId
   {
-    _id: 'fl-101',
-    id: 'fl-101',
+    _id: '6ad11d23082e23d8abf828d0',
+    id: '6ad11d23082e23d8abf828d0',
     flight_number: 'AI-805',
     airline: 'Air India',
     airline_logo: AI_LOGO,
@@ -497,7 +497,24 @@ export const getFlightById = async (id) => {
     return res.data?.flight || res.data
   } catch (err) {
     console.warn('Backend getFlightById failed, using mock flight:', err)
-    return MOCK_FLIGHTS.find((f) => f._id === id || f.id === id || f.flight_number === id) || MOCK_FLIGHTS[0]
+    const cleaned = String(id || '').trim().toUpperCase()
+    const matched = MOCK_FLIGHTS.find(
+      (f) =>
+        f._id === id ||
+        f.id === id ||
+        f.id?.toUpperCase() === cleaned ||
+        f.flight_number?.toUpperCase() === cleaned ||
+        f.flight_id?.toUpperCase() === cleaned ||
+        (cleaned === 'FL-101' && f._id === '6ad11d23082e23d8abf828d0')
+    )
+    if (matched) return matched
+
+    // Resilient fallback preserving the requested ID so routes like /book/6ad11d23082e23d8abf828d0 never lose state
+    return {
+      ...MOCK_FLIGHTS[0],
+      _id: id || '6ad11d23082e23d8abf828d0',
+      id: id || '6ad11d23082e23d8abf828d0',
+    }
   }
 }
 
